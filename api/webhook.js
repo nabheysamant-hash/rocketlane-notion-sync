@@ -11,6 +11,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // DEBUG: Log what token we're getting
+  console.log('NOTION_TOKEN exists:', !!process.env.NOTION_TOKEN);
+  console.log('NOTION_TOKEN starts with:', process.env.NOTION_TOKEN?.substring(0, 10));
+  console.log('NOTION_TOKEN length:', process.env.NOTION_TOKEN?.length);
+  console.log('DATABASE_ID:', process.env.NOTION_DATABASE_ID);
+
   try {
     const payload = req.body;
     
