@@ -17,27 +17,50 @@ export default async function handler(req, res) {
     // Log incoming webhook for debugging
     console.log('Received Rocketlane webhook:', JSON.stringify(payload, null, 2));
 
-    // Extract task details from webhook payload
-    // Note: Adjust these field names based on actual Rocketlane webhook structure
-    const task = payload.task || payload.data || payload;
+    // Extract task details from Rocketlane payload structure
+    const task = payload.data?.task;
     
-    const taskName = task.name || task.title || task.task_name || 'Untitled Task';
-    const taskOwner = task.owner?.name || task.assignee?.name || task.assigned_to || '';
-    const taskId = task.id || task.task_id || '';
-    const taskUrl = task.url || task.task_url || '';
-    const projectName = task.project?.name || task.project_name || '';
-    const dueDate = task.due_date || task.deadline || null;
-    const status = task.status || 'Not Started';
-    const description = task.description || '';
+    if (!task) {
+      console.log('No task data found in payload');
+      return res.status(400).json({ error: 'Invalid payload structure' });
+    }
+    
+    const taskName = task.taskName || 'Untitled Task';
+    const taskId = task.taskId ? String(task.taskId) : '';
+    const projectName = task.project?.projectName || '';
+    const dueDate = task.dueDate || null;
+    const status = task.status?.label || 'Not Started';
+    const description = task.taskDescription?.replace(/<[^>]*>/g, '') || ''; // Strip HTML tags
+    
+    // Build Rocketlane URL (adjust domain if needed)
+    const taskUrl = taskId ? `https://app.rocketlane.com/task/${taskId}` : '';
+    
+    // Extract assignee names from the complex assignees structure
+    const assigneeNames = [];
+    if (task.assignees?.members) {
+      task.assignees.members.forEach(member => {
+        const fullName = `${member.firstName || ''} ${member.lastName || ''}`.trim();
+        if (fullName) assigneeNames.push(fullName);
+      });
+    }
+    
+    const taskOwner = assigneeNames.join(', ') || 'Unassigned';
 
+    // FILTER TEMPORARILY DISABLED FOR TESTING
     // Filter: Only sync if owner matches Vipul Gupta
-    if (!taskOwner.toLowerCase().includes('vipul') && !taskOwner.toLowerCase().includes('gupta')) {
+    /*
+    const ownerLower = taskOwner.toLowerCase();
+    if (!ownerLower.includes('vipul') && !ownerLower.includes('gupta')) {
       console.log(`Skipping task - Owner "${taskOwner}" does not match "${TARGET_OWNER}"`);
       return res.status(200).json({ 
         message: 'Task skipped - not assigned to Vipul Gupta',
-        owner: taskOwner 
+        owner: taskOwner,
+        taskName: taskName
       });
     }
+    */
+
+    console.log(`Processing task: ${taskName} for owner: ${taskOwner}`);
 
     // Check if task already exists in Notion (by Rocketlane ID)
     const existingPages = await notion.databases.query({
@@ -97,7 +120,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ 
         message: 'Task updated in Notion',
         page_id: pageId,
-        task_name: taskName
+        task_name: taskName,
+        owner: taskOwner
       });
     } else {
       // Create new page
@@ -117,7 +141,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ 
         message: 'Task created in Notion',
         page_id: newPage.id,
-        task_name: taskName
+        task_name: taskName,
+        owner: taskOwner
       });
     }
 
