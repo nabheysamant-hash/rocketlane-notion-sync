@@ -1,0 +1,12 @@
+{
+  "name": "rocketlane-notion-sync",
+  "version": "1.0.0",
+  "description": "Sync Rocketlane tasks to Notion for Vipul Gupta",
+  "type": "module",
+  "dependencies": {
+    "@notionhq/client": "^2.2.15"
+  },
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}
