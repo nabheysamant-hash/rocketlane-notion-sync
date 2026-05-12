@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "env": { 
-    "NOTION_TOKEN": "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",
+  "env": {
+    "NOTION_TOKEN": "@notion_token",
     "NOTION_DATABASE_ID": "@notion_database_id"
   }
 }
